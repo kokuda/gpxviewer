@@ -1,43 +1,46 @@
 ///////////////////////////////////////////////////////////////////////////////
-// loadgpx.4.js
+// loadgpx.js
 //
-// Javascript object to load GPX-format GPS data into Google Maps.
+// MIT License
 //
-// Copyright (C) 2006 Kaz Okuda (http://notions.okuda.ca)
+// Copyright (c) 2018 Kaz Okuda (http://notions.okuda.ca)
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
-// of the License, or (at your option) any later version.
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// If you use this script or have any questions please leave a comment
-// at http://notions.okuda.ca/geotagging/projects-im-working-on/gpx-viewer/
-// A link to the GPL license can also be found there.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 //
 ///////////////////////////////////////////////////////////////////////////////
 //
-// History:
-//    revision 1 - Initial implementation
-//    revision 2 - Removed LoadGPXFileIntoGoogleMap and made it the callers
-//                 responsibility.  Added more options (colour, width, delta).
-//    revision 3 - Waypoint parsing now compatible with Firefox.
-//    revision 4 - Upgraded to Google Maps API version 2.  Tried changing the way
-//               that the map calculated the way the center and zoom level, but
-//               GMAP API 2 requires that you center and zoom the map first.
-//               I have left the bounding box calculations commented out in case
-//               they might come in handy in the future.
+// Javascript object to load GPX-format GPS data into Google Maps.
 //
-// Author: Kaz Okuda
-// URI: http://notions.okuda.ca/geotagging/projects-im-working-on/gpx-viewer/
+// Usage:
+//
+// parser = new GPXParser(<gpxfiledata>, new google.maps.Map(...));
+// parser.SetTrackColour("#ff0000");				// Set the track line colour
+// parser.SetTrackWidth(5);							// Set the track line width
+// parser.SetMinTrackPointDelta(0.001);				// Set the minimum distance between track points
+// parser.CenterAndZoom(request.responseXML);		// Center and Zoom the map over all the points.
+// parser.AddTrackpointsToMap();					// Add the trackpoints
+// parser.AddWaypointsToMap();						// Add the waypoints
+// 
+// Code is hosted on GitHub https://github.com/kokuda/gpxviewer
+//
+// If you use this script or have any questions please leave a comment
+// at http://notions.okuda.ca/geotagging/projects-im-working-on/gpx-viewer/
 //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -84,8 +87,8 @@ GPXParser.prototype.TranslateName = function(name)
 
 GPXParser.prototype.CreateMarker = function(point)
 {
-	var lon = parseFloat(point.getAttribute("lon"));
-	var lat = parseFloat(point.getAttribute("lat"));
+	var lon = parseFloat(point.getAttribute("lon")) || 0;
+	var lat = parseFloat(point.getAttribute("lat")) || 0;
 	var html = "";
 
 	if (point.getElementsByTagName("html").length > 0)
@@ -120,49 +123,46 @@ GPXParser.prototype.CreateMarker = function(point)
 		}
 	}
 
-	var marker = new GMarker(new GLatLng(lat,lon));
-	GEvent.addListener(marker, "click",
+	var infowindow = new google.maps.InfoWindow({
+		content: html
+	});
+
+	var marker = new google.maps.Marker({
+		position: new google.maps.LatLng(lat,lon),
+		map: this.map
+	});
+
+	marker.addListener("click",
 		function()
 		{
-			marker.openInfoWindowHtml(html);
+			infowindow.open(marker.get('map'), marker);
 		}
 	);
-
-	this.map.addOverlay(marker);
-
-
-	// All methods that add items to the map return the bounding box of what they added.
-	//var latlng = new GLatLng(lat,lon);
-	//return new GLatLngBounds(latlng,latlng);
 }
 
 
 GPXParser.prototype.AddTrackSegmentToMap = function(trackSegment, colour, width)
 {
-	//var latlngbounds = new GLatLngBounds();
+	//var latlngbounds = new google.maps.LatLngBounds();
 
 	var trackpoints = trackSegment.getElementsByTagName("trkpt");
 	if (trackpoints.length == 0)
 	{
-		return; //latlngbounds;
+		return;
 	}
 
 	var pointarray = [];
 
 	// process first point
-	var lastlon = parseFloat(trackpoints[0].getAttribute("lon"));
-	var lastlat = parseFloat(trackpoints[0].getAttribute("lat"));
-	var latlng = new GLatLng(lastlat,lastlon);
+	var lastlon = parseFloat(trackpoints[0].getAttribute("lon")) || 0;
+	var lastlat = parseFloat(trackpoints[0].getAttribute("lat")) || 0;
+	var latlng = new google.maps.LatLng(lastlat,lastlon);
 	pointarray.push(latlng);
-	//latlngbounds.extend(latlng);
-
-	// Create a marker at the begining of each track segment
-	//this.CreateMarker(trackpoints[0]);
 
 	for (var i=1; i < trackpoints.length; i++)
 	{
-		var lon = parseFloat(trackpoints[i].getAttribute("lon"));
-		var lat = parseFloat(trackpoints[i].getAttribute("lat"));
+		var lon = parseFloat(trackpoints[i].getAttribute("lon")) || 0;
+		var lat = parseFloat(trackpoints[i].getAttribute("lat")) || 0;
 
 		// Verify that this is far enough away from the last point to be used.
 		var latdiff = lat - lastlat;
@@ -171,91 +171,65 @@ GPXParser.prototype.AddTrackSegmentToMap = function(trackSegment, colour, width)
 		{
 			lastlon = lon;
 			lastlat = lat;
-			latlng = new GLatLng(lat,lon);
+			latlng = new google.maps.LatLng(lat,lon);
 			pointarray.push(latlng);
-			//latlngbounds.extend(latlng);
 		}
 
 	}
 
-	var polyline = new GPolyline(pointarray, colour, width);
+	var polyline = new google.maps.Polyline({
+		path: pointarray,
+		strokeColor: colour,
+		strokeWeight: width
+	});
 
-	this.map.addOverlay(polyline);
-
-	// All methods that add items to the map return the bounding box of what they added.
-	//return latlngbounds;
+	polyline.setMap(this.map);
 }
 
 GPXParser.prototype.AddTrackToMap = function(track, colour, width)
 {
 	var segments = track.getElementsByTagName("trkseg");
-	//var latlngbounds = new GLatLngBounds();
+
 	for (var i=0; i < segments.length; i++)
 	{
 		var segmentlatlngbounds = this.AddTrackSegmentToMap(segments[i], colour, width);
-		//this.AddTrackSegmentToMap(segments[i], colour, width);
-		//latlngbounds.extend(segmentlatlngbounds.getSouthWest());
-		//latlngbounds.extend(segmentlatlngbounds.getNorthEast());
 	}
-
-	// All methods that add items to the map return the bounding box of what they added.
-	//return latlngbounds;
 }
 
 GPXParser.prototype.CenterAndZoom = function (trackSegment, maptype)
 {
 
 	var pointlist = new Array("trkpt", "wpt");
-	var minlat = 0;
-	var maxlat = 0;
-	var minlon = 0;
-	var maxlon = 0;
+	var bounds = new google.maps.LatLngBounds();
 
 	for (var pointtype=0; pointtype < pointlist.length; pointtype++)
 	{
-
-		// Center the map and zoom on the given segment.
 		var trackpoints = trackSegment.getElementsByTagName(pointlist[pointtype]);
-
-		// If the min and max are uninitialized then initialize them.
-		if ( (trackpoints.length > 0) && (minlat == maxlat) && (minlat == 0) )
-		{
-			minlat = parseFloat(trackpoints[0].getAttribute("lat"));
-			maxlat = parseFloat(trackpoints[0].getAttribute("lat"));
-			minlon = parseFloat(trackpoints[0].getAttribute("lon"));
-			maxlon = parseFloat(trackpoints[0].getAttribute("lon"));
-		}
 
 		for (var i=0; i < trackpoints.length; i++)
 		{
-			var lon = parseFloat(trackpoints[i].getAttribute("lon"));
-			var lat = parseFloat(trackpoints[i].getAttribute("lat"));
+			var lon = parseFloat(trackpoints[i].getAttribute("lon")) || 0;
+			var lat = parseFloat(trackpoints[i].getAttribute("lat")) || 0;
 
-			if (lon < minlon) minlon = lon;
-			if (lon > maxlon) maxlon = lon;
-			if (lat < minlat) minlat = lat;
-			if (lat > maxlat) maxlat = lat;
+			bounds.extend(new google.maps.LatLng(lat, lon));
 		}
 	}
 
-	if ( (minlat == maxlat) && (minlat == 0) )
+	this.map.fitBounds(bounds);
+	this.map.setCenter(bounds.getCenter());
+
+	// maptype is maintained for backward compatibility, but it should not be relied upon.
+	// map.setMapTypeId can be called directly
+	if (maptype !== undefined)
 	{
-		this.map.setCenter(new GLatLng(49.327667, -122.942333), 14);
-		return;
+		console.warn("WARNING: gpxviewer CenterAndZoom maptype argument is deprecated.")
+		this.map.setMapTypeId(maptype);
 	}
-
-	// Center around the middle of the points
-	var centerlon = (maxlon + minlon) / 2;
-	var centerlat = (maxlat + minlat) / 2;
-
-	var bounds = new GLatLngBounds(new GLatLng(minlat, minlon), new GLatLng(maxlat, maxlon));
-
-	this.map.setCenter(new GLatLng(centerlat, centerlon), this.map.getBoundsZoomLevel(bounds), maptype);
 }
 
 GPXParser.prototype.CenterAndZoomToLatLngBounds = function (latlngboundsarray)
 {
-	var boundingbox = new GLatLngBounds();
+	var boundingbox = new google.maps.LatLngBounds();
 	for (var i=0; i<latlngboundsarray.length; i++)
 	{
 		if (!latlngboundsarray[i].isEmpty())
@@ -265,44 +239,29 @@ GPXParser.prototype.CenterAndZoomToLatLngBounds = function (latlngboundsarray)
 		}
 	}
 
-	var centerlat = (boundingbox.getNorthEast().lat() + boundingbox.getSouthWest().lat()) / 2;
-	var centerlng = (boundingbox.getNorthEast().lng() + boundingbox.getSouthWest().lng()) / 2;
-	this.map.setCenter(new GLatLng(centerlat, centerlng), this.map.getBoundsZoomLevel(boundingbox));
+	this.map.fitBounds(boundingbox);
+	this.map.setCenter(boundingbox.getCenter());
 }
 
 
 GPXParser.prototype.AddTrackpointsToMap = function ()
 {
 	var tracks = this.xmlDoc.documentElement.getElementsByTagName("trk");
-	//var latlngbounds = new GLatLngBounds();
 
 	for (var i=0; i < tracks.length; i++)
 	{
 		this.AddTrackToMap(tracks[i], this.trackcolour, this.trackwidth);
-		//var tracklatlngbounds = this.AddTrackToMap(tracks[i], this.trackcolour, this.trackwidth);
-		//latlngbounds.extend(tracklatlngbounds.getSouthWest());
-		//latlngbounds.extend(tracklatlngbounds.getNorthEast());
 	}
-
-	// All methods that add items to the map return the bounding box of what they added.
-	//return latlngbounds;
 }
 
 GPXParser.prototype.AddWaypointsToMap = function ()
 {
 	var waypoints = this.xmlDoc.documentElement.getElementsByTagName("wpt");
-	//var latlngbounds = new GLatLngBounds();
 
 	for (var i=0; i < waypoints.length; i++)
 	{
 		this.CreateMarker(waypoints[i]);
-		//var waypointlatlngbounds = this.CreateMarker(waypoints[i]);
-		//latlngbounds.extend(waypointlatlngbounds.getSouthWest());
-		//latlngbounds.extend(waypointlatlngbounds.getNorthEast());
 	}
-
-	// All methods that add items to the map return the bounding box of what they added.
-	//return latlngbounds;
 }
 
 
