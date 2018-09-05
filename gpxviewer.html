@@ -17,7 +17,7 @@
 
         <!-- Replace the key in the line below with an API key for your site.  You can get one here http://www.google.com/apis/maps/signup.html -->
 		<script src="//maps.googleapis.com/maps/api/js?key=[YOUR KEY HERE]" type="text/javascript"></script>
-		<script src="../../loadgpx.js" type="text/javascript"></script>
+		<script src="loadgpx.js" type="text/javascript"></script>
 		<script type="text/javascript">
 
 		//<![CDATA[
@@ -44,6 +44,25 @@
 			request.send(null);
 		}
 
+		function getQueryString()
+		{
+			var result = new Array();
+			var query = window.location.search.substring(1);
+			var parms = query.split('&');
+			for (var i=0; i<parms.length; i++)
+			{
+				var pos = parms[i].indexOf('=');
+				if (pos > 0)
+				{
+					var key = parms[i].substring(0,pos);
+					var val = parms[i].substring(pos+1);
+					result[key] = val;
+				}
+			}
+
+			return result;
+		}
+
 		function onLoad()
 		{
 			MyMap = new google.maps.Map(document.getElementById("map"), {
@@ -51,7 +70,13 @@
           		zoom: 8
 			});
 
-			LoadGPXFileIntoGoogleMap(MyMap, "pocotrail.xml");
+			var query = getQueryString();
+			var gpx = query["gpx"];
+			if (!gpx)
+			{
+				gpx = "data/pocotrail.xml";
+			}
+			LoadGPXFileIntoGoogleMap(MyMap, gpx);
 		}
 
 		//]]>
