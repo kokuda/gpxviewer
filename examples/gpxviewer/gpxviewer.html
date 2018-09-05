@@ -26,9 +26,6 @@
 
 		function LoadGPXFileIntoGoogleMap(map, filename)
 		{
-			// Remove any existing overlays from the map.
-			//map.clearOverlays();
-
 			var request = new XMLHttpRequest();
 			request.open("GET", filename, true);
 			request.onreadystatechange = function()
@@ -52,9 +49,8 @@
 			MyMap = new google.maps.Map(document.getElementById("map"), {
           		center: {lat: -34.397, lng: 150.644},
           		zoom: 8
-	        }); 
-			//MyMap.addControl(new GLargeMapControl());
-			//MyMap.addControl(new GMapTypeControl());
+			});
+
 			LoadGPXFileIntoGoogleMap(MyMap, "pocotrail.xml");
 		}
 
