@@ -1,45 +1,46 @@
 ///////////////////////////////////////////////////////////////////////////////
 // loadgpx.js
 //
-// Javascript object to load GPX-format GPS data into Google Maps.
+// MIT License
 //
-// Copyright (C) 2006 Kaz Okuda (http://notions.okuda.ca)
+// Copyright (c) 2018 Kaz Okuda (http://notions.okuda.ca)
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
-// of the License, or (at your option) any later version.
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// If you use this script or have any questions please leave a comment
-// at http://notions.okuda.ca/geotagging/projects-im-working-on/gpx-viewer/
-// A link to the GPL license can also be found there.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 //
 ///////////////////////////////////////////////////////////////////////////////
 //
-// History:
-//    revision 1 - Initial implementation
-//    revision 2 - Removed LoadGPXFileIntoGoogleMap and made it the callers
-//                 responsibility.  Added more options (colour, width, delta).
-//    revision 3 - Waypoint parsing now compatible with Firefox.
-//    revision 4 - Upgraded to Google Maps API version 2.  Tried changing the way
-//               that the map calculated the way the center and zoom level, but
-//               GMAP API 2 requires that you center and zoom the map first.
-//               I have left the bounding box calculations commented out in case
-//               they might come in handy in the future.
-//	  Code is now in Github at https://github.com/kokuda/gpxviewer
-//	  Please see the GitHub repo for new releases 
+// Javascript object to load GPX-format GPS data into Google Maps.
 //
-// Author: Kaz Okuda
-// URI: http://notions.okuda.ca/geotagging/projects-im-working-on/gpx-viewer/
+// Usage:
+//
+// parser = new GPXParser(<gpxfiledata>, new google.maps.Map(...));
+// parser.SetTrackColour("#ff0000");				// Set the track line colour
+// parser.SetTrackWidth(5);							// Set the track line width
+// parser.SetMinTrackPointDelta(0.001);				// Set the minimum distance between track points
+// parser.CenterAndZoom(request.responseXML);		// Center and Zoom the map over all the points.
+// parser.AddTrackpointsToMap();					// Add the trackpoints
+// parser.AddWaypointsToMap();						// Add the waypoints
+// 
+// Code is hosted on GitHub https://github.com/kokuda/gpxviewer
+//
+// If you use this script or have any questions please leave a comment
+// at http://notions.okuda.ca/geotagging/projects-im-working-on/gpx-viewer/
 //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -215,8 +216,15 @@ GPXParser.prototype.CenterAndZoom = function (trackSegment, maptype)
 	}
 
 	this.map.fitBounds(bounds);
-	this.map.setMapTypeId(maptype);
 	this.map.setCenter(bounds.getCenter());
+
+	// maptype is maintained for backward compatibility, but it should not be relied upon.
+	// map.setMapTypeId can be called directly
+	if (maptype !== undefined)
+	{
+		console.warn("WARNING: gpxviewer CenterAndZoom maptype argument is deprecated.")
+		this.map.setMapTypeId(maptype);
+	}
 }
 
 GPXParser.prototype.CenterAndZoomToLatLngBounds = function (latlngboundsarray)

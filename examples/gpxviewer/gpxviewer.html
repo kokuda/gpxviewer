@@ -36,7 +36,7 @@
 					parser.SetTrackColour("#ff0000");					// Set the track line colour
 					parser.SetTrackWidth(5);							// Set the track line width
 					parser.SetMinTrackPointDelta(0.001);				// Set the minimum distance between track points
-					parser.CenterAndZoom(request.responseXML, google.maps.MapTypeId.ROADMAP); // Center and Zoom the map over all the points.
+					parser.CenterAndZoom(request.responseXML);			// Center and Zoom the map over all the points.
 					parser.AddTrackpointsToMap();						// Add the trackpoints
 					parser.AddWaypointsToMap();							// Add the waypoints
 				}
